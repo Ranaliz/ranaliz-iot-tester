@@ -48,22 +48,22 @@ Download the latest builds from **[GitHub Releases](https://github.com/Ranaliz/r
 | `Ranaliz-iOT-Tester-*-macOS-arm64.zip` | Apple Silicon (M1/M2/M3/…) — unzip, then open the `.app` |
 | `Ranaliz-iOT-Tester-*-Windows-x64.exe` | Windows 10/11 (one-file; no installer) |
 
-CI currently publishes **Apple Silicon** and **Windows** builds. Intel Mac users can build locally with `bash build_macos.sh` on an Intel Mac.
+CI currently publishes **Apple Silicon** (Developer ID signed + notarized) and **Windows** builds. Intel Mac users can build locally with `bash build_macos.sh` on an Intel Mac.
 
-**macOS (unsigned):** first launch may be blocked by Gatekeeper — right-click the app → **Open**, or allow it under **System Settings → Privacy & Security**.
+**macOS:** release builds are notarized — download, unzip, and open the `.app` (first launch may briefly show “Apple is checking…”, then it opens).
 
 **Windows (unsigned):** SmartScreen may warn — choose **More info → Run anyway**.
 
 ### Publishing a new release
 
-After merging release workflow changes to the default branch:
+Ensure Apple notarization secrets are set (`APPLE_CERTIFICATE_P12`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_TEAM_ID`, `APPLE_API_KEY`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`), then:
 
 ```bash
-git tag v2.0.0
-git push origin v2.0.0
+git tag v2.0.1
+git push origin v2.0.1
 ```
 
-GitHub Actions builds macOS (arm64 + Intel) and Windows, then attaches the binaries to the release.
+GitHub Actions builds, signs/notarizes macOS, builds Windows, then attaches the binaries to the release.
 
 ## Usage (short)
 

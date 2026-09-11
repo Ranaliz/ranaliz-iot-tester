@@ -46,7 +46,7 @@ except Exception:
 
 
 APP_TITLE = "Ranaliz iOT Tester"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.0.1"
 
 FUNCTIONS = [
     "01-Read Coils",

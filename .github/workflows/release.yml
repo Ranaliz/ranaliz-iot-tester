@@ -64,8 +64,24 @@ jobs:
         if: matrix.platform == 'macos'
         env:
           APP_VERSION: ${{ steps.version.outputs.version }}
+        run: bash build_macos.sh
+
+      - name: Sign and notarize macOS .app
+        if: matrix.platform == 'macos'
+        env:
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
-          bash build_macos.sh
+          chmod +x tools/sign_and_notarize_macos.sh
+          bash tools/sign_and_notarize_macos.sh
+
+      - name: Package macOS zip
+        if: matrix.platform == 'macos'
+        run: |
           ZIP_NAME="Ranaliz-iOT-Tester-${{ steps.version.outputs.version }}-${{ matrix.asset_label }}.zip"
           ditto -c -k --keepParent "dist/Ranaliz iOT Tester.app" "${ZIP_NAME}"
           echo "ASSET_PATH=${ZIP_NAME}" >> "$GITHUB_ENV"
