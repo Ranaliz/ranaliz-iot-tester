@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Install c104 on macOS from sdist with a Clang fix.
-# PyPI ships no macOS wheels; c104 2.x sdist fails on newer Apple Clang because
-# DateTime.cpp re-adds a default argument on an out-of-line constructor.
+# Install c104 on macOS from sdist with Clang/linker fixes.
+# PyPI ships no macOS wheels. Known issues on newer Apple toolchains:
+# 1) DateTime.cpp re-adds a default argument on an out-of-line constructor
+# 2) lib60870 links -lrt (Linux-only; absent on Darwin)
 set -euo pipefail
 
 PYTHON="${1:-python3}"
@@ -18,22 +19,34 @@ SRC_DIR="$(echo c104-*/)"
 from pathlib import Path
 import glob
 
-path = Path(glob.glob("c104-*/src/object/DateTime.cpp")[0])
-text = path.read_text(encoding="utf-8")
+root = Path(glob.glob("c104-*/")[0])
+
+# Patch 1: DateTime default-argument redeclaration
+dt = root / "src/object/DateTime.cpp"
+text = dt.read_text(encoding="utf-8")
 old = (
     "DateTime::DateTime(const std::chrono::system_clock::time_point t =\n"
     "                       std::chrono::system_clock::now())"
 )
 new = "DateTime::DateTime(const std::chrono::system_clock::time_point t)"
-if old not in text:
-    # Already fixed (e.g. newer upstream) — install as-is
-    if "system_clock::now())" not in text.split("DateTime::DateTime", 1)[-1][:200]:
-        print(f"No patch needed for {path}")
-    else:
-        raise SystemExit(f"Unexpected DateTime.cpp contents; cannot patch {path}")
+if old in text:
+    dt.write_text(text.replace(old, new, 1), encoding="utf-8")
+    print(f"Patched {dt}")
 else:
-    path.write_text(text.replace(old, new, 1), encoding="utf-8")
-    print(f"Patched {path}")
+    print(f"DateTime patch skipped (already fixed?): {dt}")
+
+# Patch 2: drop -lrt on Unix CMake link lines (not available on macOS)
+for rel in (
+    "depends/lib60870/lib60870-C/src/CMakeLists.txt",
+    "depends/lib60870/lib60870-C/src/hal/CMakeLists.txt",
+):
+    p = root / rel
+    t = p.read_text(encoding="utf-8")
+    if "-lrt" not in t:
+        print(f"librt patch skipped: {p}")
+        continue
+    p.write_text(t.replace("        -lrt\n", "").replace("\t-lrt\n", ""), encoding="utf-8")
+    print(f"Patched librt out of {p}")
 PY
 
 "$PYTHON" -m pip install "./${SRC_DIR}"
