@@ -18,6 +18,18 @@ fi
 
 echo "Building macOS .app bundle with: $PYTHON"
 
+# Bundle version: APP_VERSION / VERSION env, else APP_VERSION from main.py
+if [[ -n "${APP_VERSION:-}" ]]; then
+  BUNDLE_VERSION="$APP_VERSION"
+elif [[ -n "${VERSION:-}" ]]; then
+  BUNDLE_VERSION="$VERSION"
+else
+  BUNDLE_VERSION="$("$PYTHON" -c "import re; t=open('main.py').read(); m=re.search(r'APP_VERSION\s*=\s*[\"\\']([^\"\\']+)', t); print(m.group(1) if m else '0.0.0')")"
+fi
+# Strip leading v if present (e.g. v2.0.0 -> 2.0.0)
+BUNDLE_VERSION="${BUNDLE_VERSION#v}"
+echo "CFBundleShortVersionString: $BUNDLE_VERSION"
+
 # Zigbee/MQTT packages must live in the active env (do not rely on system-site only)
 if ! "$PYTHON" -c "import zigpy, zigpy_znp, bellows, zigpy_deconz, paho.mqtt.client" 2>/dev/null; then
   echo "Missing Zigbee/MQTT packages in this Python env." >&2
@@ -156,7 +168,7 @@ app = BUNDLE(
     info_plist={
         'CFBundleName': 'Ranaliz iOT Tester',
         'CFBundleDisplayName': 'Ranaliz iOT Tester',
-        'CFBundleShortVersionString': '1.0.0',
+        'CFBundleShortVersionString': '${BUNDLE_VERSION}',
         'NSMainNibFile': '',
         'NSPrincipalClass': 'NSApplication',
         'NSHighResolutionCapable': True,

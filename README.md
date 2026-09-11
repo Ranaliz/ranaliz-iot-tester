@@ -41,8 +41,28 @@ python main.py
 
 ## Pre-built binaries
 
-- **macOS:** `dist/Ranaliz iOT Tester.app` (from Releases or local build)
-- **Windows:** `dist/Ranaliz iOT Tester.exe` (one-file; run on Windows — no installer wizard)
+Download the latest builds from **[GitHub Releases](https://github.com/Ranaliz/ranaliz-iot-tester/releases/latest)**:
+
+| Asset | Platform |
+|-------|----------|
+| `Ranaliz-iOT-Tester-*-macOS-arm64.zip` | Apple Silicon (M1/M2/M3/…) — unzip, then open the `.app` |
+| `Ranaliz-iOT-Tester-*-macOS-x86_64.zip` | Intel Mac (also runs on Apple Silicon via Rosetta) |
+| `Ranaliz-iOT-Tester-*-Windows-x64.exe` | Windows 10/11 (one-file; no installer) |
+
+**macOS (unsigned):** first launch may be blocked by Gatekeeper — right-click the app → **Open**, or allow it under **System Settings → Privacy & Security**.
+
+**Windows (unsigned):** SmartScreen may warn — choose **More info → Run anyway**.
+
+### Publishing a new release
+
+After merging release workflow changes to the default branch:
+
+```bash
+git tag v2.0.0
+git push origin v2.0.0
+```
+
+GitHub Actions builds macOS (arm64 + Intel) and Windows, then attaches the binaries to the release.
 
 ## Usage (short)
 

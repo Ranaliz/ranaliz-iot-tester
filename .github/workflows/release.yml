@@ -1,0 +1,126 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.asset_label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            asset_label: macOS-arm64
+            arch: arm64
+            platform: macos
+          - os: macos-13
+            asset_label: macOS-x86_64
+            arch: x86_64
+            platform: macos
+          - os: windows-latest
+            asset_label: Windows-x64
+            arch: x64
+            platform: windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Set version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == v* ]]; then
+            VER="${GITHUB_REF_NAME#v}"
+          else
+            VER="$(python -c "import re; t=open('main.py').read(); m=re.search(r'APP_VERSION\\s*=\\s*[\"\\']([^\"\\']+)', t); print(m.group(1) if m else '0.0.0')")"
+          fi
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${VER}"
+
+      - name: Install dependencies (macOS)
+        if: matrix.platform == 'macos'
+        run: |
+          python -m pip install -U pip
+          python -m pip install -r requirements.txt pyinstaller pyinstaller-hooks-contrib pillow
+
+      - name: Build macOS .app
+        if: matrix.platform == 'macos'
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          bash build_macos.sh
+          ZIP_NAME="Ranaliz-iOT-Tester-${{ steps.version.outputs.version }}-${{ matrix.asset_label }}.zip"
+          ditto -c -k --keepParent "dist/Ranaliz iOT Tester.app" "${ZIP_NAME}"
+          echo "ASSET_PATH=${ZIP_NAME}" >> "$GITHUB_ENV"
+          ls -lh "${ZIP_NAME}"
+
+      - name: Install dependencies (Windows)
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          # build_windows.bat uses project .venv
+          python -m venv .venv
+          .venv/Scripts/python.exe -m pip install -U pip
+          .venv/Scripts/python.exe -m pip install -r requirements.txt pyinstaller pyinstaller-hooks-contrib pillow
+
+      - name: Build Windows .exe
+        if: matrix.platform == 'windows'
+        shell: cmd
+        run: build_windows.bat
+
+      - name: Package Windows artifact
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          EXE_NAME="Ranaliz-iOT-Tester-${{ steps.version.outputs.version }}-${{ matrix.asset_label }}.exe"
+          cp "dist/Ranaliz iOT Tester.exe" "${EXE_NAME}"
+          echo "ASSET_PATH=${EXE_NAME}" >> "$GITHUB_ENV"
+          ls -lh "${EXE_NAME}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.asset_label }}
+          path: ${{ env.ASSET_PATH }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: release-*
+          merge-multiple: true
+
+      - name: List release files
+        run: ls -lh artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
