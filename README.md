@@ -46,8 +46,9 @@ Download the latest builds from **[GitHub Releases](https://github.com/Ranaliz/r
 | Asset | Platform |
 |-------|----------|
 | `Ranaliz-iOT-Tester-*-macOS-arm64.zip` | Apple Silicon (M1/M2/M3/…) — unzip, then open the `.app` |
-| `Ranaliz-iOT-Tester-*-macOS-x86_64.zip` | Intel Mac (also runs on Apple Silicon via Rosetta) |
 | `Ranaliz-iOT-Tester-*-Windows-x64.exe` | Windows 10/11 (one-file; no installer) |
+
+CI currently publishes **Apple Silicon** and **Windows** builds. Intel Mac users can build locally with `bash build_macos.sh` on an Intel Mac.
 
 **macOS (unsigned):** first launch may be blocked by Gatekeeper — right-click the app → **Open**, or allow it under **System Settings → Privacy & Security**.
 

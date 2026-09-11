@@ -21,10 +21,8 @@ jobs:
             asset_label: macOS-arm64
             arch: arm64
             platform: macos
-          - os: macos-13
-            asset_label: macOS-x86_64
-            arch: x86_64
-            platform: macos
+          # macos-13 (Intel) runners are often unavailable / long-queued and
+          # would block the whole release matrix; ship arm64 + Windows for now.
           - os: windows-latest
             asset_label: Windows-x64
             arch: x64
