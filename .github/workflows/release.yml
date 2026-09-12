@@ -116,7 +116,7 @@ jobs:
             -SigningPolicySlug "test-release" `
             -ApiToken $env:SIGNPATH_API_TOKEN `
             -WaitForCompletion `
-            -OutputArtifactPath "signed"
+            -OutputArtifactPath "signed/Ranaliz iOT Tester.exe"
 
       - name: Package Windows artifact
         if: matrix.platform == 'windows'
