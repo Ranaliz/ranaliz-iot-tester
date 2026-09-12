@@ -101,26 +101,22 @@ jobs:
         shell: cmd
         run: build_windows.bat
 
-      - name: Upload unsigned artifact
-        if: matrix.platform == 'windows'
-        id: upload-unsigned-artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-windows-exe
-          path: dist/Ranaliz iOT Tester.exe
-          retention-days: 1
-
       - name: Sign Windows .exe (SignPath)
         if: matrix.platform == 'windows'
-        uses: signpath/github-action-submit-signing-request@v2
-        with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: "09284a1c-2f5f-4697-8388-5280c4e5b66c"
-          project-slug: "ranaliz-iot-tester"
-          signing-policy-slug: "test-release"
-          github-artifact-id: ${{ steps.upload-unsigned-artifact.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: signed
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+        run: |
+          Install-Module -Name SignPath -RequiredVersion 4.4.1 -Force -Scope CurrentUser
+          New-Item -ItemType Directory -Force -Path signed | Out-Null
+          Submit-SigningRequest `
+            -InputArtifactPath "dist/Ranaliz iOT Tester.exe" `
+            -OrganizationId "09284a1c-2f5f-4697-8388-5280c4e5b66c" `
+            -ProjectSlug "ranaliz-iot-tester" `
+            -SigningPolicySlug "test-release" `
+            -ApiToken $env:SIGNPATH_API_TOKEN `
+            -WaitForCompletion `
+            -OutputArtifactPath "signed"
 
       - name: Package Windows artifact
         if: matrix.platform == 'windows'
