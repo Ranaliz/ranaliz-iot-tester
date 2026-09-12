@@ -101,12 +101,33 @@ jobs:
         shell: cmd
         run: build_windows.bat
 
+      - name: Upload unsigned artifact
+        if: matrix.platform == 'windows'
+        id: upload-unsigned-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-windows-exe
+          path: dist/Ranaliz iOT Tester.exe
+          retention-days: 1
+
+      - name: Sign Windows .exe (SignPath)
+        if: matrix.platform == 'windows'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: "09284a1c-2f5f-4697-8388-5280c4e5b66c"
+          project-slug: "ranaliz-iot-tester"
+          signing-policy-slug: "test-release"
+          github-artifact-id: ${{ steps.upload-unsigned-artifact.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
       - name: Package Windows artifact
         if: matrix.platform == 'windows'
         shell: bash
         run: |
           EXE_NAME="Ranaliz-iOT-Tester-${{ steps.version.outputs.version }}-${{ matrix.asset_label }}.exe"
-          cp "dist/Ranaliz iOT Tester.exe" "${EXE_NAME}"
+          cp "signed/Ranaliz iOT Tester.exe" "${EXE_NAME}"
           echo "ASSET_PATH=${EXE_NAME}" >> "$GITHUB_ENV"
           ls -lh "${EXE_NAME}"
 
